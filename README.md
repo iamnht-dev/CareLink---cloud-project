@@ -1,64 +1,73 @@
-# CareLink
+﻿# CareLink
 
-CareLink là dự án hướng đến việc hỗ trợ những người sống một mình theo dõi tình trạng và thói quen hằng ngày, đồng thời giúp họ nhận biết khi có điều gì bất thường. Ý tưởng dài hạn là phát triển thành một thiết bị đeo kết nối với hệ thống theo dõi; giai đoạn đầu tập trung vào một ứng dụng web mô phỏng để xây dựng và kiểm tra luồng sử dụng trước khi đầu tư vào phần cứng.
+CareLink hỗ trợ người sống một mình tự xác nhận tình trạng mỗi ngày. Định hướng dài hạn là một thiết bị đeo kết nối ứng dụng và cloud; phiên bản hiện tại là **web mô phỏng chạy cục bộ** bằng C# / Blazor.
 
-> **Lưu ý về trạng thái dự án:** CareLink hiện ở giai đoạn khởi tạo. Repository có bộ khung Blazor Web App; các chức năng sản phẩm bên dưới là định hướng MVP, chưa được triển khai đầy đủ.
+## Phiên bản hiện tại
 
-## Mục tiêu
+- Dashboard nhịp tim **giả lập** được cập nhật khoảng 3 giây một lần khi kết nối máy chủ.
+- Check-in hằng ngày bằng nút **Tôi vẫn ổn**.
+- Cài giờ nhắc theo múi giờ Việt Nam (UTC+7).
+- Hiện báo thức khi đến giờ mà chưa check-in; có bật âm thanh và tắt âm thanh.
+- Lưu giờ nhắc, ngày check-in và tối đa 100 sự kiện vào localStorage của trình duyệt; hiển thị 12 sự kiện gần nhất.
+- Thử nhanh báo thức và mất/kết nối lại thiết bị mô phỏng.
+- Giao diện thích ứng màn hình điện thoại và máy tính.
 
-- Hỗ trợ người sống một mình tự xác nhận tình trạng mỗi ngày bằng check-in.
-- Nhắc người dùng bằng cảnh báo hiển thị kiểu báo thức nếu check-in bị trễ.
-- Dùng dữ liệu sức khỏe mô phỏng để xây dựng giao diện và kiểm tra luồng sản phẩm.
-- Tạo nền tảng có thể mở rộng về sau cho người thân/người hỗ trợ và thiết bị đeo.
-
-CareLink không thay thế bác sĩ, không chẩn đoán bệnh và không đảm bảo khả năng cứu hộ khẩn cấp.
-
-## MVP dự kiến
-
-1. Hồ sơ cơ bản của người dùng.
-2. Check-in hằng ngày do chính người dùng xác nhận.
-3. Một số chỉ số minh họa, chẳng hạn nhịp tim, được gắn nhãn rõ ràng là **dữ liệu mô phỏng**.
-4. Khi quá hạn check-in, ứng dụng hiển thị cảnh báo và phát âm thanh như báo thức; người dùng có thể xác nhận hoặc tắt cảnh báo.
-5. Hiển thị lịch sử check-in và trạng thái cảnh báo để người dùng kiểm tra.
-
-Web mô phỏng chỉ chứng minh được giao diện và luồng phần mềm. Nó không chứng minh rằng máy tính hay một thiết bị đeo chưa được kiểm định có thể đo chính xác nhịp tim, huyết áp hoặc chỉ số y tế khác. Huyết áp và tích hợp cảm biến thật chưa nằm trong MVP đã định hướng.
-
-## Công nghệ hiện tại
-
-- **C# / ASP.NET Core Blazor Web App** — giao diện web và tương tác phía máy chủ.
-- **.NET 10** — SDK mục tiêu của bộ khung hiện tại.
-- **Dữ liệu mô phỏng** — dùng trong giai đoạn phát triển ban đầu; chưa kết nối thiết bị y tế.
-- **Git và GitHub** — quản lý mã nguồn; nhánh chính là `main`.
-
-AWS chưa được tích hợp. Chỉ xem xét AWS sau khi luồng cục bộ rõ ràng và có đánh giá dịch vụ, chi phí, bảo mật cùng cách dọn tài nguyên. Không tạo tài nguyên AWS có thể tính phí nếu chưa được duyệt.
+Nhịp tim là số ngẫu nhiên, đường nhịp trên màn hình chỉ để trang trí, không phải điện tâm đồ. Chưa đo huyết áp, chưa tích hợp cảm biến và chưa đánh giá độ chính xác y tế. CareLink không thay thế bác sĩ hoặc đảm bảo cứu hộ khẩn cấp.
 
 ## Chạy ứng dụng
 
-Cần cài .NET 10 SDK. Từ thư mục chứa `CareHeath.csproj`, chạy:
+Cần .NET 10 SDK. Mở terminal tại thư mục dự án:
 
 ```bash
 dotnet restore
-dotnet run
+dotnet run --launch-profile http
 ```
 
-Mở địa chỉ localhost được in ra trong terminal để xem ứng dụng. Địa chỉ và cổng có thể khác nhau tùy cấu hình máy.
+Truy cập **http://localhost:5095** trên máy đang chạy ứng dụng. Dừng máy chủ bằng Ctrl+C.
 
-## Nguyên tắc phát triển
+Các file `appsettings*.json` được giữ local và không theo dõi bằng Git. MVP hiện không cần secret hay thiết lập bổ sung trong các file này để chạy. Không đưa thông tin đăng nhập AWS vào source code.
 
-- Làm theo từng giai đoạn; sau mỗi giai đoạn, tổng kết để người dùng kiểm tra trước khi tiếp tục.
-- Bắt đầu bằng dữ liệu mô phỏng và phân biệt rõ dữ liệu giả lập với dữ liệu sức khỏe thật.
-- Ưu tiên kiến trúc nhỏ, dễ chạy cục bộ; không thêm dịch vụ chỉ để tăng số lượng công nghệ.
-- Không đưa khóa truy cập, mật khẩu, token hay thông tin nhạy cảm vào mã nguồn.
-- Kiểm soát chi phí AI và AWS; không tự mua/nâng cấp dịch vụ hoặc tạo tài nguyên có thể tính phí khi chưa được duyệt.
-- Thiết kế cảnh báo cần xem xét trường hợp mất mạng, thiếu dữ liệu, báo động giả và không có người phản hồi. Báo thức trên web có thể không hoạt động nếu trình duyệt hoặc thiết bị đã tắt.
+## Hướng dẫn thử
 
-## Lộ trình
+1. Mở trang, nhấn **Bật âm thanh** và cho phép âm thanh nếu trình duyệt yêu cầu. Bạn sẽ nghe một tiếng thử.
+2. Nhấn **Thử báo thức trễ check-in**. Kiểm tra banner cảnh báo và tiếng báo lặp lại.
+3. Nhấn **Tắt âm thanh**: tiếng dừng, banner vẫn còn. Nhấn **Tôi vẫn ổn** trên banner để hoàn tất check-in và đóng báo thức demo.
+4. Tải lại trang: check-in và nhật ký vẫn được giữ. Âm thanh phải bật lại sau khi tải trang.
+5. Nhấn **Mô phỏng mất kết nối**: số nhịp tim chuyển thành dấu gạch, không tiếp tục sinh số đo. Nhấn kết nối lại để tiếp tục.
+6. Để thử hạn check-in thật, dùng một phiên trình duyệt riêng chưa check-in, đặt giờ nhắc vào phút sắp tới, lưu giờ và giữ trang mở. Khi đến hạn, cảnh báo xuất hiện sau tối đa khoảng 3 giây khi máy chủ/trình duyệt đang hoạt động bình thường.
+7. Thu nhỏ cửa sổ hoặc dùng chế độ màn hình điện thoại để kiểm tra bố cục.
 
-1. **Khởi tạo:** repository GitHub và bộ khung Blazor.
-2. **MVP cục bộ:** check-in hằng ngày, dữ liệu mô phỏng, cảnh báo trễ và lịch sử.
-3. **Đánh giá:** kiểm tra luồng bình thường, trễ, dữ liệu thiếu và giới hạn khi mất kết nối.
-4. **Mở rộng có kiểm soát:** làm rõ nhu cầu người hỗ trợ, thiết bị đeo, kiểm chứng cảm biến và tích hợp cloud trước khi chọn kiến trúc.
+## Giới hạn cần biết
 
-## Trạng thái
+- Dữ liệu nằm trong trình duyệt trên máy đang dùng, chưa đồng bộ giữa thiết bị. Xóa dữ liệu trang sẽ mất lịch sử. Không dùng dữ liệu sức khỏe thật trong bản demo.
+- Chỉ thử trên một tab; chưa xử lý xung đột ghi giữa nhiều tab.
+- Đây là Blazor Interactive Server: tương tác cần kết nối với máy chủ đang chạy.
+- Báo thức không được bảo đảm khi đóng tab, máy ngủ, mất kết nối hoặc trình duyệt hạn chế chạy nền. Không dùng làm báo thức khẩn cấp.
+- Tắt âm thanh không đồng nghĩa đã check-in. Demo báo thức không thay đổi giờ nhắc; nút **Tôi vẫn ổn** vẫn ghi nhận check-in thật trong dữ liệu local nếu hôm nay chưa xác nhận.
+- Chưa có đăng nhập, người hỗ trợ, gửi SMS/email, cảm biến thật hoặc tài nguyên AWS.
 
-Hiện repository đã được khởi tạo và đẩy lên GitHub. Bộ khung Blazor là phần mã đã có; các tính năng MVP và kết nối AWS vẫn là công việc tiếp theo.
+## Cấu trúc
+
+- `Components/Pages/Home.razor`: dashboard, check-in, báo thức và các nút demo.
+- `Services/CareStore.cs`: trạng thái, quy tắc thời gian và giao diện `ICareStore`; `BrowserCareStore` lưu localStorage.
+- `wwwroot/carelink.js`: âm thanh và cầu nối localStorage.
+- `wwwroot/app.css`: giao diện responsive.
+- `Program.cs`: đăng ký dịch vụ và cấu hình ASP.NET Core.
+
+## Định hướng AWS
+
+Sau khi MVP cục bộ được kiểm tra, sẽ chọn dịch vụ để chạy web, lưu lịch sử có xác thực, xử lý check-in quá hạn trên máy chủ và nhận dữ liệu thiết bị trong tương lai. `ICareStore` là điểm tách phần lưu trữ; adapter AWS cần bổ sung xác thực, phân quyền và xử lý lỗi trước khi dùng thật.
+
+Chưa chốt dịch vụ, tạo tài nguyên hoặc triển khai AWS. Trước bước này cần thống nhất ngân sách, quyền truy cập, cảnh báo chi phí và cách dọn tài nguyên. Backend trên AWS không tự bảo đảm điện thoại/thiết bị sẽ phát chuông khi web đóng; cần thiết kế cơ chế thông báo riêng.
+
+## Kiểm tra đã thực hiện
+
+- `dotnet build --no-restore`: thành công, không warning/error.
+- 6 kiểm tra quy tắc: trước hạn, đúng hạn, UTC sang UTC+7, đã check-in, ngày kế tiếp và đầu ngày mới.
+- HTTP trang chủ và file JavaScript: trả 200.
+- Kiểm tra cú pháp JavaScript bằng `node --check`: đạt.
+- Chưa xác minh tương tác trong trình duyệt hoặc âm thanh bằng tai trong phiên phát triển này; thực hiện theo hướng dẫn thử ở trên.
+
+## Quy trình phát triển
+
+Phát triển theo từng giai đoạn: hoàn thiện MVP cục bộ → người dùng thử và phản hồi → tích hợp AWS đã duyệt → đánh giá mở rộng. Không tạo tài nguyên có thể tính phí khi chưa được duyệt. Git bỏ qua appsettings, output build, file IDE và `.env`; dữ liệu đã commit trước đây vẫn tồn tại trong lịch sử Git.

@@ -6,6 +6,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
+builder.Services.AddScoped<CareHeath.Services.ICareStore, CareHeath.Services.BrowserCareStore>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

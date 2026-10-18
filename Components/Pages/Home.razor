@@ -1,7 +1,98 @@
-﻿@page "/"
+@page "/"
+@rendermode InteractiveServer
+@implements IAsyncDisposable
+@using CareHeath.Services
+@inject ICareStore Store
+@inject IJSRuntime JS
 
-<PageTitle>Home</PageTitle>
+<PageTitle>CareLink — Một mình, vẫn an tâm</PageTitle>
+<section class="intro"><div><div class="eyebrow">GÓC AN TÂM CỦA BẠN</div><h1>Hôm nay, bạn thế nào?</h1><p>Một lần xác nhận nhỏ. Thêm một ngày an tâm.</p></div><div class="date-chip">@Now.ToString("dd / MM / yyyy")<small>Giờ Việt Nam · UTC+7</small></div></section>
+@if (!string.IsNullOrEmpty(error)) { <div class="notice error" role="alert">@error</div> }
+@if (!loaded) { <p role="status">Đang mở dữ liệu trên trình duyệt…</p> }
+else
+{
+    @if (alert)
+    {
+        <section class="alarm" role="alert" aria-live="assertive"><div><div class="eyebrow">@(demo ? "THỬ BÁO THỨC" : "ĐÃ ĐẾN GIỜ CHECK-IN")</div><h2>Bạn ơi, xác nhận hôm nay nhé!</h2><p>@(sound ? "Âm thanh đã bật trên trình duyệt này." : "Âm thanh chưa bật. Nhấn “Bật âm thanh” để nghe báo thức.")</p></div><div class="actions"><button @onclick="CheckIn">Tôi vẫn ổn</button><button class="secondary" @onclick="Mute">Tắt âm thanh</button></div></section>
+    }
+    <div class="dashboard">
+        <section class="card checkin"><div class="section-label">CHECK-IN HẰNG NGÀY <span class="pill">@(CheckedToday ? "Đã xác nhận" : "Chờ xác nhận")</span></div><div class="check-icon">@(CheckedToday ? "✓" : "♡")</div><h2>@(CheckedToday ? "Thật vui vì bạn vẫn ổn!" : "Một chạm để an tâm")</h2><p>@(CheckedToday ? "Lần xác nhận hôm nay đã được ghi lại." : "Dành một chút thời gian để xác nhận tình trạng của bạn.")</p><button class="primary check-button" @onclick="CheckIn" disabled="@(CheckedToday && !demo)">@(CheckedToday ? "Đã check-in hôm nay" : "Tôi vẫn ổn")</button><div class="schedule"><label for="reminder">Giờ nhắc mỗi ngày (UTC+7)</label><div class="actions"><input id="reminder" type="time" value="@reminder" @onchange="e => reminder = e.Value?.ToString() ?? string.Empty" /><button class="secondary" @onclick="SaveTime">Lưu giờ</button></div></div><p class="small">Nếu chưa check-in khi đến giờ, CareLink sẽ nhắc bạn ngay trên trang.</p></section>
+        <section class="card vitals"><div class="section-label">THIẾT BỊ ĐEO <span class="pill neutral">Mô phỏng</span></div><div class="device-status"><span class="dot @(connected ? "" : "offline")"></span>@(connected ? "Đang nhận dữ liệu giả lập" : "Mất kết nối mô phỏng")</div><div class="heart-reading"><span class="heart">♥</span><strong>@(connected ? heartRate.ToString() : "—")</strong><span>bpm</span></div><h2>Nhịp tim mô phỏng</h2><svg class="pulse" viewBox="0 0 440 70" role="img" aria-label="Đường nhịp tim trang trí, không phải điện tâm đồ"><path d="M0 40 H70 L82 32 L94 44 L110 40 H138 L155 15 L171 60 L189 5 L207 40 H255 L270 33 L286 44 L300 40 H340 L355 20 L369 55 L385 15 L401 40 H440" /></svg><div class="reading-footer">@(connected ? $"Cập nhật lúc {lastReading:HH:mm:ss}" : "Dữ liệu không khả dụng; không suy diễn tình trạng sức khỏe.")</div><div class="notice">Chỉ số được tạo ngẫu nhiên để thử phần mềm. Chưa có cảm biến thật; chưa đo huyết áp.</div></section>
+    </div>
+    <div class="lower-grid">
+        <section class="card"><div class="section-label">NHẬT KÝ CỦA BẠN <span class="muted">@state.Events.Count sự kiện</span></div>@if (state.Events.Count == 0) { <div class="empty">Chưa có hoạt động.<br />Lần check-in đầu tiên sẽ xuất hiện ở đây.</div> } else { <ol class="timeline">@foreach (var entry in state.Events.Take(12)) { <li><span class="event-dot"></span><div>@entry.Message<small>@entry.At.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM/yyyy · HH:mm:ss")</small></div></li> }</ol> }<p class="small">Lưu tối đa 100 sự kiện trong trình duyệt này.</p></section>
+        <section class="card demo"><div class="section-label">GÓC THỬ NGHIỆM</div><h2>Thử ngay, không cần chờ.</h2><p>Mô phỏng một tình huống để xem CareLink phản hồi.</p><div class="demo-buttons"><button class="secondary" @onclick="EnableSound">@(sound ? "✓ Âm thanh đã bật · Nghe thử" : "Bật âm thanh")</button><button class="secondary" @onclick="DemoAlarm">Thử báo thức trễ check-in</button><button class="secondary" @onclick="ToggleDevice">@(connected ? "Mô phỏng mất kết nối" : "Kết nối lại thiết bị mô phỏng")</button></div><p class="small">Báo thức demo không thay đổi lịch check-in. Web cần đang mở và kết nối với máy chủ; trình duyệt có thể hạn chế âm thanh hoặc hoạt động nền.</p><div class="storage-note">Lưu trên trình duyệt · Chưa kết nối AWS<br />Không đồng bộ giữa các thiết bị. Chỉ dùng một tab khi thử.</div></section>
+    </div>
+}
+@code {
+    private CareState state = new();
+    private string reminder = "20:00", error = "";
+    private bool loaded, alert, demo, sound, muted, connected = true, disposed;
+    private int heartRate = 74;
+    private DateTimeOffset lastReading = CheckInRules.VietnamNow;
+    private DateTimeOffset Now => CheckInRules.VietnamNow;
+    private bool CheckedToday => state.LastCheckInDay == Now.ToString("yyyy-MM-dd");
+    private readonly CancellationTokenSource cancellation = new();
+    private Task? loop;
 
-<h1>Hello, world!</h1>
-
-Welcome to your new app.
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        try { state = await Store.LoadAsync(); reminder = state.ReminderTime; loaded = true; await Evaluate(); loop = Tick(); }
+        catch (Exception) { error = "Không đọc được dữ liệu trình duyệt. Hãy cho phép lưu trữ và tải lại trang. Dữ liệu cũ không bị ghi đè."; }
+        StateHasChanged();
+    }
+    private async Task Tick()
+    {
+        using var timer = new PeriodicTimer(TimeSpan.FromSeconds(3));
+        try {
+            while (await timer.WaitForNextTickAsync(cancellation.Token)) {
+                await InvokeAsync(async () => {
+                    if (disposed) return;
+                    if (connected) { heartRate = Random.Shared.Next(65, 91); lastReading = Now; }
+                    await Evaluate(); StateHasChanged();
+                });
+            }
+        } catch (OperationCanceledException) { } catch (JSDisconnectedException) { }
+    }
+    private void Record(string message) { state.Events.Insert(0, new(Now, message)); if (state.Events.Count > 100) state.Events.RemoveRange(100, state.Events.Count - 100); }
+    private async Task Persist()
+    {
+        try { await Store.SaveAsync(state); error = ""; }
+        catch (JSException) { error = "Không lưu được dữ liệu. Thay đổi chỉ còn trong phiên này; kiểm tra quyền lưu trữ trình duyệt."; }
+    }
+    private async Task Evaluate()
+    {
+        var due = CheckInRules.IsDue(state, Now);
+        if (due && state.AlertDay != Now.ToString("yyyy-MM-dd")) {
+            state.AlertDay = Now.ToString("yyyy-MM-dd"); muted = false;
+            Record("Đến giờ nhưng chưa check-in — đã hiển thị nhắc nhở."); await Persist();
+        }
+        alert = demo || due;
+        await JS.InvokeVoidAsync("careLink.alarm", alert && sound && !muted);
+    }
+    private async Task CheckIn()
+    {
+        if (!CheckedToday) { state.LastCheckInDay = Now.ToString("yyyy-MM-dd"); Record("Đã check-in: Tôi vẫn ổn."); await Persist(); }
+        demo = false; muted = false; await Evaluate();
+    }
+    private async Task SaveTime()
+    {
+        if (!TimeOnly.TryParseExact(reminder, "HH:mm", out _)) { error = "Vui lòng chọn giờ nhắc hợp lệ."; return; }
+        state.ReminderTime = reminder; Record($"Đặt giờ nhắc: {reminder} (UTC+7)."); await Persist(); await Evaluate();
+    }
+    private async Task EnableSound()
+    {
+        try { sound = await JS.InvokeAsync<bool>("careLink.enable"); muted = false; await Evaluate(); }
+        catch (JSException) { error = "Trình duyệt chưa cho phép phát âm thanh. Hãy kiểm tra quyền âm thanh của trang."; }
+    }
+    private async Task Mute() { muted = true; await JS.InvokeVoidAsync("careLink.alarm", false); }
+    private async Task DemoAlarm() { demo = true; muted = false; Record("Thử báo thức (demo)."); await Persist(); await Evaluate(); }
+    private async Task ToggleDevice() { connected = !connected; Record(connected ? "Thiết bị mô phỏng kết nối lại." : "Thiết bị mô phỏng mất kết nối."); if (connected) lastReading = Now; await Persist(); }
+    public async ValueTask DisposeAsync()
+    {
+        disposed = true; cancellation.Cancel();
+        try { await JS.InvokeVoidAsync("careLink.stop"); } catch (JSDisconnectedException) { } catch (TaskCanceledException) { }
+        cancellation.Dispose();
+    }
+}

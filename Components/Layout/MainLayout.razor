@@ -1,23 +1,7 @@
 ﻿@inherits LayoutComponentBase
-
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
-
-    <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
-        </div>
-
-        <article class="content px-4">
-            @Body
-        </article>
-    </main>
+<div class="shell">
+    <header class="site-header"><a href="/" class="brand"><span class="brand-mark">♥</span> CareLink</a><span class="header-note">Một mình, vẫn an tâm.</span><span class="local-badge">BẢN MÔ PHỎNG</span></header>
+    <main>@Body</main>
+    <footer>CareLink · Đồng hành mỗi ngày <span>Dữ liệu giả lập · Không dùng để chẩn đoán hoặc cứu hộ.</span></footer>
 </div>
-
-<div id="blazor-error-ui" data-nosnippet>
-    An unhandled error has occurred.
-    <a href="." class="reload">Reload</a>
-    <span class="dismiss">🗙</span>
-</div>
+<div id="blazor-error-ui">Kết nối ứng dụng gặp lỗi. <a href="/">Tải lại trang</a></div>
